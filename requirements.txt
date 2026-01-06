@@ -1,0 +1,8 @@
+flask
+PyPDF2
+ollama
+flask_session
+python-docx
+markdown
+pandas
+numpy

@@ -1,0 +1,215 @@
+<!-- career_comparison.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Career Path Comparison</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .comparison-card {
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .trend-indicator {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        .trend-up { color: green; }
+        .trend-down { color: red; }
+        .chart-container {
+            height: 300px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Career Path Comparison & ROI Calculator</h2>
+            <div>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary mr-2">Main Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
+            </div>
+        </div>
+
+        {% if not comparison_data %}
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" id="comparisonForm">
+                    <div id="careerPaths">
+                        <div class="career-path-entry mb-4">
+                            <h4>Career Path 1</h4>
+                            <div class="form-group">
+                                <label>Career Path*</label>
+                                <input type="text" name="career_paths" class="form-control" required
+                                       placeholder="e.g., Software Engineer">
+                            </div>
+                            <div class="form-group">
+                                <label>Education/Training Cost ($)*</label>
+                                <input type="number" name="education_costs" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Time to Complete (months)*</label>
+                                <input type="number" name="timeframes" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-secondary mb-3" onclick="addCareerPath()">
+                        Add Another Career Path
+                    </button>
+                    
+                    <button type="submit" class="btn btn-primary">Generate Comparison</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if comparison_data %}
+        <div class="row">
+            <!-- Salary Projections Chart -->
+            <div class="col-12 mb-4">
+                <div class="card comparison-card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">5-Year Salary Projections</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="salaryChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROI Analysis -->
+            {% for path, roi in comparison_data.roi_analysis.items() %}
+            <div class="col-md-4">
+                <div class="card comparison-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">{{ path }} - ROI Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Investment Return:</strong> {{ roi.return_percentage }}%</p>
+                        <p><strong>Break-even Point:</strong> {{ roi.breakeven_months }} months</p>
+                        <p><strong>5-Year Net Gain:</strong> ${{ roi.net_gain }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Industry Trends -->
+            {% for path, trend in comparison_data.industry_trends.items() %}
+            <div class="col-md-6">
+                <div class="card comparison-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">{{ path }} - Industry Trends</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="trend-indicator {{ 'trend-up' if trend.growth_rate > 0 else 'trend-down' }}">
+                                {{ '↑' if trend.growth_rate > 0 else '↓' }}
+                            </span>
+                            <span>Growth Rate: {{ trend.growth_rate }}%</span>
+                        </div>
+                        <p><strong>Market Demand:</strong> {{ trend.market_demand }}</p>
+                        <p><strong>Future Outlook:</strong> {{ trend.future_outlook }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Risk Factors -->
+            <div class="col-12">
+                <div class="card comparison-card">
+                    <div class="card-header bg-warning">
+                        <h4 class="mb-0">Risk Factors Analysis</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for path, risks in comparison_data.risk_factors.items() %}
+                            <div class="col-md-6">
+                                <h5>{{ path }}</h5>
+                                <ul class="list-group">
+                                    {% for risk in risks %}
+                                    <li class="list-group-item">{{ risk }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function addCareerPath() {
+            const pathCount = $('.career-path-entry').length + 1;
+            const newPath = `
+                <div class="career-path-entry mb-4">
+                    <h4>Career Path ${pathCount}</h4>
+                    <div class="form-group">
+                        <label>Career Path*</label>
+                        <input type="text" name="career_paths" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Education/Training Cost ($)*</label>
+                        <input type="number" name="education_costs" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Time to Complete (months)*</label>
+                        <input type="number" name="timeframes" class="form-control" required>
+                    </div>
+                </div>
+            `;
+            $('#careerPaths').append(newPath);
+        }
+
+        {% if comparison_data %}
+        // Initialize salary projection chart
+        const ctx = document.getElementById('salaryChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Object.keys({{ comparison_data.salary_projections|tojson }}),
+                datasets: [
+                    {% for path in paths %}
+                    {
+                        label: '{{ path }}',
+                        data: Object.values({{ comparison_data.salary_projections|tojson }})[{{ loop.index0 }}],
+                        borderColor: getRandomColor(),
+                        fill: false
+                    },
+                    {% endfor %}
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+        {% endif %}
+    </script>
+</body>
+</html>

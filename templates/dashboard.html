@@ -1,0 +1,397 @@
+<!-- templates/dashboard.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Career Guidance Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .feature-card {
+            height: 100%;
+            transition: transform 0.3s ease-in-out;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #4a90e2;
+        }
+        .welcome-section {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+        .status-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-section {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2><i class="fas fa-user-circle mr-2"></i>Welcome back, {{ username }}!</h2>
+                    <p class="mb-0">Your personal career development platform</p>
+                </div>
+                <div class="col-md-4 text-md-right">
+                    <a href="{{ url_for('logout') }}" class="btn btn-light"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Overview -->
+        <div class="progress-section">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4><i class="fas fa-chart-line mr-2"></i>Your Progress</h4>
+                    <p class="mb-2">Complete all features to get the most out of your career guidance platform</p>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ progress_percentage }}%" 
+                             aria-valuenow="{{ progress_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ progress_percentage }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <h2 class="text-success">{{ progress_percentage }}%</h2>
+                    <p class="mb-0">Complete</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Features Grid -->
+        <div class="row mb-4">
+            <!-- Career Profile Setup -->
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card position-relative">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <h5 class="card-title">Career Profile</h5>
+                        <p class="card-text">Set up or update your career profile and upload your resume</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-{{ 'edit' if completion_stats.profile_complete else 'plus' }} mr-2"></i>
+                            {{ 'Update' if completion_stats.profile_complete else 'Setup' }} Profile
+                        </a>
+                        {% if completion_stats.profile_complete %}
+                            <span class="status-badge bg-success text-white">
+                                <i class="fas fa-check mr-1"></i>Complete
+                            </span>
+                        {% else %}
+                            <span class="status-badge bg-warning text-dark">
+                                <i class="fas fa-exclamation mr-1"></i>Pending
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Career Guidance -->
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card position-relative">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-compass"></i>
+                        </div>
+                        <h5 class="card-title">Career Guidance</h5>
+                        <p class="card-text">Get personalized career recommendations and roadmap</p>
+                        <a href="{{ url_for('career_guidance') }}" class="btn btn-primary">
+                            <i class="fas fa-{{ 'eye' if completion_stats.guidance_generated else 'magic' }} mr-2"></i>
+                            {{ 'View' if completion_stats.guidance_generated else 'Generate' }} Guidance
+                        </a>
+                        {% if completion_stats.guidance_generated %}
+                            <span class="status-badge bg-success text-white">
+                                <i class="fas fa-check mr-1"></i>Generated
+                            </span>
+                        {% else %}
+                            <span class="status-badge bg-{{ 'secondary' if not completion_stats.profile_complete else 'warning' }} text-{{ 'white' if not completion_stats.profile_complete else 'dark' }}">
+                                <i class="fas fa-{{ 'lock' if not completion_stats.profile_complete else 'clock' }} mr-1"></i>
+                                {{ 'Locked' if not completion_stats.profile_complete else 'Pending' }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Gap Analysis -->
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card position-relative">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h5 class="card-title">Skill Gap Analysis</h5>
+                        <p class="card-text">Analyze your skills and get personalized learning recommendations</p>
+                        <a href="{{ url_for('skill_gap_analysis') }}" class="btn btn-primary">
+                            <i class="fas fa-chart-line mr-2"></i>Analyze Skills
+                        </a>
+                        {% if completion_stats.skill_gap_done %}
+                            <span class="status-badge bg-info text-white">
+                                <i class="fas fa-check mr-1"></i>Done
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interview Preparation -->
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card position-relative">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h5 class="card-title">Interview Prep</h5>
+                        <p class="card-text">Prepare for interviews with AI-powered guidance</p>
+                        <a href="{{ url_for('interview_preparation') }}" class="btn btn-primary">
+                            <i class="fas fa-briefcase mr-2"></i>Start Prep
+                        </a>
+                        {% if completion_stats.interview_prep_done %}
+                            <span class="status-badge bg-info text-white">
+                                <i class="fas fa-check mr-1"></i>Ready
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Features -->
+        <div class="row">
+            <!-- Recent Activity -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-history mr-2"></i>Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-card mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6><i class="fas fa-user-cog mr-2"></i>Profile Setup</h6>
+                                    {% if completion_stats.profile_complete %}
+                                        <p class="mb-0 text-success">
+                                            <i class="fas fa-check-circle mr-2"></i>Profile created and resume uploaded
+                                        </p>
+                                    {% else %}
+                                        <p class="mb-0 text-muted">
+                                            <i class="fas fa-info-circle mr-2"></i>Complete your profile setup
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                {% if not completion_stats.profile_complete %}
+                                <a href="{{ url_for('index') }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6><i class="fas fa-compass mr-2"></i>Career Guidance</h6>
+                                    {% if completion_stats.guidance_generated %}
+                                        <p class="mb-0 text-success">
+                                            <i class="fas fa-check-circle mr-2"></i>Personalized guidance generated
+                                        </p>
+                                    {% else %}
+                                        <p class="mb-0 text-muted">
+                                            <i class="fas fa-info-circle mr-2"></i>Generate your career roadmap
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                {% if completion_stats.profile_complete and not completion_stats.guidance_generated %}
+                                <a href="{{ url_for('career_guidance') }}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-magic"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6><i class="fas fa-chart-bar mr-2"></i>Skill Analysis</h6>
+                                    {% if completion_stats.skill_gap_done %}
+                                        <p class="mb-0 text-success">
+                                            <i class="fas fa-check-circle mr-2"></i>Skills analyzed and resources provided
+                                        </p>
+                                    {% else %}
+                                        <p class="mb-0 text-muted">
+                                            <i class="fas fa-info-circle mr-2"></i>Analyze your skill gaps
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                {% if not completion_stats.skill_gap_done %}
+                                <a href="{{ url_for('skill_gap_analysis') }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-chart-line"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions & Downloads -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-download mr-2"></i>Downloads & Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="{{ url_for('download_doc') if has_guidance else '#' }}" 
+                               class="list-group-item list-group-item-action {{ 'disabled' if not has_guidance }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-file-download mr-2"></i>Career Guidance Report
+                                        {% if not has_guidance %}
+                                        <small class="text-muted d-block">Generate guidance first</small>
+                                        {% endif %}
+                                    </div>
+                                    {% if has_guidance %}
+                                    <span class="badge badge-success">Available</span>
+                                    {% else %}
+                                    <span class="badge badge-secondary">Locked</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            
+                            <a href="{{ url_for('download_interview_prep') if has_interview_prep else '#' }}" 
+                               class="list-group-item list-group-item-action {{ 'disabled' if not has_interview_prep }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-file-alt mr-2"></i>Interview Preparation Guide
+                                        {% if not has_interview_prep %}
+                                        <small class="text-muted d-block">Complete interview prep first</small>
+                                        {% endif %}
+                                    </div>
+                                    {% if has_interview_prep %}
+                                    <span class="badge badge-success">Available</span>
+                                    {% else %}
+                                    <span class="badge badge-secondary">Locked</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            
+                            <a href="{{ url_for('career_comparison') }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-balance-scale mr-2"></i>Career Path Comparison
+                                        <small class="text-muted d-block">Compare different career options</small>
+                                    </div>
+                                    <span class="badge badge-primary">Available</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Steps Recommendations -->
+        {% if progress_percentage < 100 %}
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb mr-2"></i>Recommended Next Steps</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if not completion_stats.profile_complete %}
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-user-cog fa-2x text-primary mb-2"></i>
+                            <h6>Complete Your Profile</h6>
+                            <p class="small text-muted">Start by setting up your profile and uploading your resume</p>
+                            <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm">Get Started</a>
+                        </div>
+                    </div>
+                    {% elif not completion_stats.guidance_generated %}
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-compass fa-2x text-success mb-2"></i>
+                            <h6>Generate Career Guidance</h6>
+                            <p class="small text-muted">Get your personalized career roadmap and recommendations</p>
+                            <a href="{{ url_for('career_guidance') }}" class="btn btn-success btn-sm">Generate Now</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if not completion_stats.skill_gap_done %}
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-chart-bar fa-2x text-info mb-2"></i>
+                            <h6>Analyze Your Skills</h6>
+                            <p class="small text-muted">Identify skill gaps and get learning recommendations</p>
+                            <a href="{{ url_for('skill_gap_analysis') }}" class="btn btn-info btn-sm">Analyze Skills</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if not completion_stats.interview_prep_done %}
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-comments fa-2x text-warning mb-2"></i>
+                            <h6>Prepare for Interviews</h6>
+                            <p class="small text-muted">Get personalized interview questions and preparation tips</p>
+                            <a href="{{ url_for('interview_preparation') }}" class="btn btn-warning btn-sm">Start Prep</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-success">
+            <div class="card-header bg-success text-white text-center">
+                <h4 class="mb-0"><i class="fas fa-trophy mr-2"></i>Congratulations!</h4>
+            </div>
+            <div class="card-body text-center">
+                <p class="lead">You've completed all the main features of the career guidance platform!</p>
+                <p>Continue exploring and updating your profile as your career goals evolve.</p>
+                <a href="{{ url_for('career_comparison') }}" class="btn btn-primary mr-2">
+                    <i class="fas fa-balance-scale mr-2"></i>Compare Career Paths
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-sync-alt mr-2"></i>Update Profile
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

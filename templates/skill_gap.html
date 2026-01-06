@@ -1,0 +1,322 @@
+<!-- skill_gap.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Skill Gap Analysis</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css">
+    <style>
+        .skill-card {
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .resource-card {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .progress {
+            height: 25px;
+        }
+        .select2-container .select2-selection--multiple {
+            min-height: 38px;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Skill Gap Analysis</h2>
+            <div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary mr-2">Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if not show_results %}
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" id="skillGapForm">
+                    <div class="form-group">
+                        <label>Target Role*</label>
+                        <input type="text" name="target_role" class="form-control" required 
+                               placeholder="e.g., Data Scientist, Software Engineer, UX Designer">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Your Current Skills (Select or type your skills)</label>
+                        <select name="current_skills" class="form-control select2" multiple>
+                            <!-- Technical Skills -->
+                            <optgroup label="Programming & Development">
+                                <option value="Python">Python</option>
+                                <option value="Java">Java</option>
+                                <option value="JavaScript">JavaScript</option>
+                                <option value="C++">C++</option>
+                                <option value="C#">C#</option>
+                                <option value="Ruby">Ruby</option>
+                                <option value="PHP">PHP</option>
+                                <option value="Swift">Swift</option>
+                                <option value="Kotlin">Kotlin</option>
+                                <option value="Go">Go</option>
+                                <option value="Rust">Rust</option>
+                                <option value="TypeScript">TypeScript</option>
+                                <option value="HTML/CSS">HTML/CSS</option>
+                                <option value="SQL">SQL</option>
+                                <option value="NoSQL">NoSQL</option>
+                                <option value="Git">Git</option>
+                                <option value="Docker">Docker</option>
+                                <option value="Kubernetes">Kubernetes</option>
+                            </optgroup>
+                            
+                            <!-- Data Skills -->
+                            <optgroup label="Data & Analytics">
+                                <option value="Data Analysis">Data Analysis</option>
+                                <option value="Machine Learning">Machine Learning</option>
+                                <option value="Deep Learning">Deep Learning</option>
+                                <option value="Data Visualization">Data Visualization</option>
+                                <option value="Statistics">Statistics</option>
+                                <option value="Big Data">Big Data</option>
+                                <option value="Data Warehousing">Data Warehousing</option>
+                                <option value="ETL">ETL</option>
+                                <option value="Business Intelligence">Business Intelligence</option>
+                                <option value="R">R</option>
+                                <option value="Tableau">Tableau</option>
+                                <option value="Power BI">Power BI</option>
+                                <option value="Excel">Excel</option>
+                            </optgroup>
+                            
+                            <!-- Cloud & DevOps -->
+                            <optgroup label="Cloud & DevOps">
+                                <option value="AWS">AWS</option>
+                                <option value="Azure">Azure</option>
+                                <option value="Google Cloud">Google Cloud</option>
+                                <option value="CI/CD">CI/CD</option>
+                                <option value="Infrastructure as Code">Infrastructure as Code</option>
+                                <option value="Terraform">Terraform</option>
+                                <option value="Ansible">Ansible</option>
+                            </optgroup>
+                            
+                            <!-- Design & UX -->
+                            <optgroup label="Design & UX">
+                                <option value="UI Design">UI Design</option>
+                                <option value="UX Design">UX Design</option>
+                                <option value="User Research">User Research</option>
+                                <option value="Wireframing">Wireframing</option>
+                                <option value="Prototyping">Prototyping</option>
+                                <option value="Figma">Figma</option>
+                                <option value="Adobe XD">Adobe XD</option>
+                                <option value="Sketch">Sketch</option>
+                            </optgroup>
+                            
+                            <!-- Business & Soft Skills -->
+                            <optgroup label="Business & Soft Skills">
+                                <option value="Project Management">Project Management</option>
+                                <option value="Agile">Agile</option>
+                                <option value="Scrum">Scrum</option>
+                                <option value="Product Management">Product Management</option>
+                                <option value="Communication">Communication</option>
+                                <option value="Leadership">Leadership</option>
+                                <option value="Team Collaboration">Team Collaboration</option>
+                                <option value="Problem Solving">Problem Solving</option>
+                                <option value="Critical Thinking">Critical Thinking</option>
+                                <option value="Time Management">Time Management</option>
+                            </optgroup>
+                        </select>
+                        <small class="form-text text-muted">You can type custom skills that aren't in the list</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" onclick="showLoading()">Analyze Skill Gap</button>
+                </form>
+                
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing your skills and generating recommendations...</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if show_results %}
+        <div class="alert alert-info">
+            <h4 class="alert-heading mb-0">Skill Gap Analysis for: {{ target_role }}</h4>
+            {% if current_skills %}
+            <p class="mb-0 mt-2"><strong>Your Current Skills:</strong> {{ current_skills|join(', ') }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            <!-- Required Skills -->
+            <div class="col-md-6">
+                <div class="card skill-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Required Skills</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            {% for skill in analysis.required_skills %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ skill }}
+                                {% if skill in analysis.missing_skills %}
+                                <span class="badge badge-warning">Missing</span>
+                                {% else %}
+                                <span class="badge badge-success">You have this!</span>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Skills to Develop -->
+            <div class="col-md-6">
+                <div class="card skill-card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Skills to Develop ({{ analysis.missing_skills|length }} skills)</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if analysis.missing_skills and analysis.missing_skills|length > 0 %}
+                        <ul class="list-group list-group-flush">
+                            {% for skill in analysis.missing_skills %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ skill }}
+                                <span class="badge badge-warning">Priority</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> Congratulations! Based on your current skills, you have most of the required skills for this role. Consider focusing on advanced proficiency in your existing skills.
+                        </div>
+                        <!-- Show some development suggestions even if no missing skills -->
+                        {% if analysis.development_priorities %}
+                        <div class="mt-3">
+                            <h6>Areas for Enhancement:</h6>
+                            <ul class="list-group">
+                                {% for priority in analysis.development_priorities[:3] %}
+                                <li class="list-group-item">{{ priority }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Development Priorities -->
+                {% if analysis.development_priorities %}
+                <div class="card skill-card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Development Priorities</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol class="list-group list-group-numbered">
+                            {% for priority in analysis.development_priorities %}
+                            <li class="list-group-item">{{ priority }}</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Learning Resources Section -->
+        {% if resources %}
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Learning Resources</h4>
+                </div>
+                <div class="card-body">
+                    {% for skill, resource in resources.items() %}
+                    <div class="resource-card">
+                        <h4 class="text-primary">{{ skill }}</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>Recommended Courses:</h5>
+                                <ul>
+                                    {% for course in resource.courses %}
+                                    <li>{{ course }}</li>
+                                    {% endfor %}
+                                </ul>
+                                
+                                <h5>Certifications:</h5>
+                                <ul>
+                                    {% for cert in resource.certifications %}
+                                    <li>{{ cert }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Practice Projects:</h5>
+                                <ul>
+                                    {% for project in resource.projects %}
+                                    <li>{{ project }}</li>
+                                    {% endfor %}
+                                </ul>
+                                
+                                <h5>Estimated Time to Learn:</h5>
+                                <p class="badge badge-info p-2">{{ resource.estimated_time }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Actions -->
+        <div class="text-center mt-4 mb-5">
+            <a href="{{ url_for('skill_gap_analysis') }}" class="btn btn-outline-primary mr-2">Analyze Another Role</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.select2').select2({
+                tags: true,
+                tokenSeparators: [',', ' '],
+                placeholder: "Select or type your skills",
+                theme: "classic"
+            });
+        });
+        
+        function showLoading() {
+            if (document.getElementById('skillGapForm').checkValidity()) {
+                document.getElementById('loadingIndicator').style.display = 'block';
+                document.getElementById('skillGapForm').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

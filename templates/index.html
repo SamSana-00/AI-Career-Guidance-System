@@ -1,0 +1,200 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Career Guidance Setup</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .profile-status {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-user-cog mr-2"></i>Career Guidance Setup</h2>
+            <div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary mr-2">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Profile Status Card -->
+        {% if session.get('profile') %}
+        <div class="profile-status">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4><i class="fas fa-check-circle mr-2"></i>Profile Already Created</h4>
+                    <p class="mb-0">You can update your profile below or return to dashboard to access other features.</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-arrow-right mr-2"></i>Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle mr-2"></i>Create Your Career Profile</h5>
+            <p class="mb-0">Fill out the form below to create your personalized career profile and get AI-powered guidance.</p>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-form mr-2"></i>
+                    {% if session.get('profile') %}Update{% else %}Create{% endif %} Your Profile
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="setupForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar-alt mr-2"></i>Age*</label>
+                                <input type="number" name="age" class="form-control" required min="13" max="100"
+                                       value="{{ session.get('profile', {}).get('Age', '') }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fas fa-graduation-cap mr-2"></i>Grade Level*</label>
+                                <select name="grade_level" class="form-control" required>
+                                    <option value="">Select Grade Level</option>
+                                    <option value="High School" {{ 'selected' if session.get('profile', {}).get('Grade Level') == 'High School' }}>High School</option>
+                                    <option value="Undergraduate" {{ 'selected' if session.get('profile', {}).get('Grade Level') == 'Undergraduate' }}>Undergraduate</option>
+                                    <option value="Graduate" {{ 'selected' if session.get('profile', {}).get('Grade Level') == 'Graduate' }}>Graduate</option>
+                                    <option value="Professional" {{ 'selected' if session.get('profile', {}).get('Grade Level') == 'Professional' }}>Professional</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fas fa-bullseye mr-2"></i>Learning Goals*</label>
+                                <textarea name="learning_goals" class="form-control" rows="3" required 
+                                          placeholder="Describe your educational and career goals...">{{ session.get('profile', {}).get('Learning Goals', '') }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-heart mr-2"></i>Subject Preferences</label>
+                                <select name="subject_preferences" class="form-control" multiple size="8">
+                                    {% set current_prefs = session.get('profile', {}).get('Subject Preferences', []) %}
+                                    <option value="Mathematics" {{ 'selected' if 'Mathematics' in current_prefs }}>Mathematics</option>
+                                    <option value="Science" {{ 'selected' if 'Science' in current_prefs }}>Science</option>
+                                    <option value="Technology" {{ 'selected' if 'Technology' in current_prefs }}>Technology</option>
+                                    <option value="Engineering" {{ 'selected' if 'Engineering' in current_prefs }}>Engineering</option>
+                                    <option value="Arts" {{ 'selected' if 'Arts' in current_prefs }}>Arts</option>
+                                    <option value="Humanities" {{ 'selected' if 'Humanities' in current_prefs }}>Humanities</option>
+                                    <option value="Business" {{ 'selected' if 'Business' in current_prefs }}>Business</option>
+                                    <option value="Social Sciences" {{ 'selected' if 'Social Sciences' in current_prefs }}>Social Sciences</option>
+                                </select>
+                                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple subjects</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fas fa-chart-line mr-2"></i>Progress Data (Optional)</label>
+                                <textarea name="progress_data" class="form-control" rows="3"
+                                          placeholder="Add any relevant academic achievements, grades, or progress...">{{ session.get('profile', {}).get('Progress Data', '') }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-file-pdf mr-2"></i>Upload Resume/CV (PDF)*</label>
+                        <input type="file" name="pdf_file" class="form-control-file" accept=".pdf" required>
+                        <small class="form-text text-muted">
+                            {% if session.get('pdf_content') %}
+                                <i class="fas fa-check-circle text-success mr-1"></i>Previous resume uploaded. Upload a new one to replace it.
+                            {% else %}
+                                Please upload your resume in PDF format for personalized analysis.
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg mr-2" onclick="showLoading()">
+                            <i class="fas fa-magic mr-2"></i>
+                            {% if session.get('profile') %}Update Profile &{% endif %} Generate Career Guidance
+                        </button>
+                        
+                        {% if session.get('profile') %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing your profile and generating personalized career guidance...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        {% if session.get('profile') %}
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-bolt mr-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('career_guidance') }}" class="btn btn-outline-primary btn-block">
+                            <i class="fas fa-compass mr-2"></i>View Career Guidance
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('skill_gap_analysis') }}" class="btn btn-outline-success btn-block">
+                            <i class="fas fa-chart-bar mr-2"></i>Skill Gap Analysis
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('interview_preparation') }}" class="btn btn-outline-warning btn-block">
+                            <i class="fas fa-comments mr-2"></i>Interview Prep
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function showLoading() {
+            if (document.getElementById('setupForm').checkValidity()) {
+                document.getElementById('loadingIndicator').style.display = 'block';
+                document.getElementById('setupForm').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!-- career_guidance.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Career Guidance Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .profile-card {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .guidance-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .success-banner {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-compass mr-2"></i>Career Guidance Results</h2>
+            <div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary mr-2">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary mr-2">
+                    <i class="fas fa-edit mr-2"></i>Update Profile
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Success Banner for Generated Guidance -->
+        {% if advice %}
+        <div class="success-banner">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4><i class="fas fa-check-circle mr-2"></i>Career Guidance Generated Successfully!</h4>
+                    <p class="mb-0">Your personalized career roadmap is ready. You can download it as a report or explore other features.</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-home mr-2"></i>Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if profile %}
+        <div class="profile-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="fas fa-user mr-2"></i>Your Profile</h4>
+                <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-edit mr-2"></i>Edit Profile
+                </a>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong><i class="fas fa-calendar-alt mr-2"></i>Age:</strong> {{ profile.Age }}</p>
+                    <p><strong><i class="fas fa-graduation-cap mr-2"></i>Grade Level:</strong> {{ profile['Grade Level'] }}</p>
+                    <p><strong><i class="fas fa-bullseye mr-2"></i>Learning Goals:</strong> {{ profile['Learning Goals'] }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong><i class="fas fa-heart mr-2"></i>Subject Preferences:</strong></p>
+                    <ul>
+                        {% for subject in profile['Subject Preferences'] %}
+                            <li>{{ subject }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not advice %}
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-magic mr-2"></i>Generate Your Career Guidance</h4>
+            </div>
+            <div class="card-body text-center">
+                <p class="lead">Ready to get your personalized career guidance based on your profile and resume?</p>
+                <form method="POST" id="generateForm">
+                    <button type="submit" class="btn btn-primary btn-lg" onclick="showLoading()">
+                        <i class="fas fa-rocket mr-2"></i>Generate Career Guidance
+                    </button>
+                </form>
+                
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2">Generating your personalized career guidance...</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if advice %}
+        <div class="guidance-content">
+            {{ advice|safe }}
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-download mr-2"></i>Download & Next Steps</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Download Your Report</h6>
+                        <a href="{{ url_for('download_doc') }}" class="btn btn-success btn-block">
+                            <i class="fas fa-file-download mr-2"></i>Download Career Guidance Report
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Explore More Features</h6>
+                        <div class="btn-group-vertical btn-block">
+                            <a href="{{ url_for('skill_gap_analysis') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-bar mr-2"></i>Skill Gap Analysis
+                            </a>
+                            <a href="{{ url_for('interview_preparation') }}" class="btn btn-outline-info">
+                                <i class="fas fa-comments mr-2"></i>Interview Preparation
+                            </a>
+                            <a href="{{ url_for('career_comparison') }}" class="btn btn-outline-warning">
+                                <i class="fas fa-balance-scale mr-2"></i>Career Comparison
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('generateForm').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
