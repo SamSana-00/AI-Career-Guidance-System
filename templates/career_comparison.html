@@ -67,6 +67,11 @@
 
         {% if comparison_data %}
         <div class="row">
+            {% if comparison_data.is_estimated %}
+        <div class="alert alert-warning">
+            <strong>Note:</strong> The AI couldn't generate a personalized comparison this time, so estimated sample data is shown below. Click "Generate Comparison" again for a fresh AI-personalized result.
+        </div>
+        {% endif %}
             <!-- Salary Projections Chart -->
             <div class="col-12 mb-4">
                 <div class="card comparison-card">
@@ -74,7 +79,9 @@
                         <h4 class="mb-0">5-Year Salary Projections</h4>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container" id="salaryChart"></div>
+                        <div class="chart-container">
+    <canvas id="salaryChart"></canvas>
+</div>
                     </div>
                 </div>
             </div>
@@ -87,9 +94,13 @@
                         <h5 class="mb-0">{{ path }} - ROI Analysis</h5>
                     </div>
                     <div class="card-body">
+                        {% if roi is mapping %}
                         <p><strong>Investment Return:</strong> {{ roi.return_percentage }}%</p>
                         <p><strong>Break-even Point:</strong> {{ roi.breakeven_months }} months</p>
                         <p><strong>5-Year Net Gain:</strong> ${{ roi.net_gain }}</p>
+                        {% else %}
+                        <p>{{ roi }}</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -103,14 +114,18 @@
                         <h5 class="mb-0">{{ path }} - Industry Trends</h5>
                     </div>
                     <div class="card-body">
+                        {% if trend is mapping %}
                         <div class="d-flex align-items-center mb-2">
-                            <span class="trend-indicator {{ 'trend-up' if trend.growth_rate > 0 else 'trend-down' }}">
-                                {{ '↑' if trend.growth_rate > 0 else '↓' }}
+                            <span class="trend-indicator {{ 'trend-up' if trend.growth_rate and trend.growth_rate > 0 else 'trend-down' }}">
+                                {{ '↑' if trend.growth_rate and trend.growth_rate > 0 else '↓' }}
                             </span>
                             <span>Growth Rate: {{ trend.growth_rate }}%</span>
                         </div>
                         <p><strong>Market Demand:</strong> {{ trend.market_demand }}</p>
                         <p><strong>Future Outlook:</strong> {{ trend.future_outlook }}</p>
+                        {% else %}
+                        <p>{{ trend }}</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -128,9 +143,13 @@
                             <div class="col-md-6">
                                 <h5>{{ path }}</h5>
                                 <ul class="list-group">
+                                    {% if risks is string %}
+                                    <li class="list-group-item">{{ risks }}</li>
+                                    {% else %}
                                     {% for risk in risks %}
                                     <li class="list-group-item">{{ risk }}</li>
                                     {% endfor %}
+                                    {% endif %}
                                 </ul>
                             </div>
                             {% endfor %}
@@ -169,17 +188,21 @@
 
         {% if comparison_data %}
         // Initialize salary projection chart
+       const salaryData = {{ comparison_data.salary_projections|tojson }};
+        const salaryLabels = Object.keys(salaryData);
+        const pathColors = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948'];
+        
         const ctx = document.getElementById('salaryChart').getContext('2d');
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: Object.keys({{ comparison_data.salary_projections|tojson }}),
+                labels: salaryLabels,
                 datasets: [
                     {% for path in paths %}
                     {
                         label: '{{ path }}',
-                        data: Object.values({{ comparison_data.salary_projections|tojson }})[{{ loop.index0 }}],
-                        borderColor: getRandomColor(),
+                        data: salaryLabels.map(year => salaryData[year][{{ loop.index0 }}]),
+                        borderColor: pathColors[{{ loop.index0 }}] || getRandomColor(),
                         fill: false
                     },
                     {% endfor %}
