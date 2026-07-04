@@ -725,6 +725,7 @@ def generate_interview_prep(role, experience_level, profile, resume_content):
         }
 def normalize_comparison_data(data, paths):
     """Normalize AI output so different key names / missing fields don't break the page"""
+
     def get_case_insensitive(d, target_path):
         """Find a dict entry whose key matches target_path, ignoring case/extra spaces"""
         if not isinstance(d, dict):
@@ -734,6 +735,7 @@ def normalize_comparison_data(data, paths):
             if isinstance(k, str) and k.strip().lower() == target_norm:
                 return v
         return {}
+
     def first_present(d, keys, default):
         """Return the first non-empty value found among possible key name variants"""
         if not isinstance(d, dict):
@@ -742,7 +744,7 @@ def normalize_comparison_data(data, paths):
             if k in d and d[k] not in (None, "", []):
                 return d[k]
         return default
-    
+
     # --- ROI Analysis ---
     roi_analysis = data.get("roi_analysis", {})
     normalized_roi = {}
@@ -755,7 +757,7 @@ def normalize_comparison_data(data, paths):
             "breakeven_months": first_present(entry, ["breakeven_months", "break_even_months", "breakeven_point"], 12),
             "net_gain": first_present(entry, ["net_gain", "five_year_net_gain", "net_5yr_gain", "5_year_net_gain"], 20000)
         }
-    
+
     # --- Industry Trends ---
     industry_trends = data.get("industry_trends", {})
     normalized_trends = {}
@@ -768,8 +770,8 @@ def normalize_comparison_data(data, paths):
             "market_demand": first_present(entry, ["market_demand", "demand"], "Moderate"),
             "future_outlook": first_present(entry, ["future_outlook", "outlook"], "Stable growth expected")
         }
-    
-    # --- Risk Factors (already working, but keep it safe) ---
+
+    # --- Risk Factors ---
     risk_factors = data.get("risk_factors", {})
     normalized_risks = {}
     for path in paths:
@@ -779,8 +781,8 @@ def normalize_comparison_data(data, paths):
         elif not isinstance(entry, list) or not entry:
             entry = ["No specific risk data available for this path."]
         normalized_risks[path] = entry
-    
-   # --- Salary Projections ---
+
+    # --- Salary Projections ---
     salary_projections = data.get("salary_projections", {})
     if not isinstance(salary_projections, dict) or not salary_projections:
         years = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
@@ -793,7 +795,6 @@ def normalize_comparison_data(data, paths):
                 values = [get_case_insensitive(values, p) or 50000 for p in paths]
             elif not isinstance(values, list):
                 values = [values] * len(paths)
-            # Clean any leftover non-numeric values
             clean_values = []
             for v in values:
                 try:
@@ -804,7 +805,7 @@ def normalize_comparison_data(data, paths):
                 clean_values = clean_values + [clean_values[-1] if clean_values else 50000] * (len(paths) - len(clean_values))
             fixed[year] = clean_values[:len(paths)]
         salary_projections = fixed
-    
+
     return {
         "salary_projections": salary_projections,
         "roi_analysis": normalized_roi,
@@ -812,6 +813,7 @@ def normalize_comparison_data(data, paths):
         "risk_factors": normalized_risks,
         "is_estimated": False
     }
+
 def generate_career_comparison(paths, education_costs, timeframes):
     """Generate career path comparison and ROI analysis"""
     prompt = f"""
@@ -819,13 +821,13 @@ def generate_career_comparison(paths, education_costs, timeframes):
     Career Paths: {', '.join(paths)}
     Education Costs: {', '.join(education_costs)}
     Timeframes: {', '.join(timeframes)}
-    
+
     Provide:
     1. 5-year salary projections
     2. Education ROI analysis
     3. Industry growth trends
     4. Risk factors
-    
+
     Respond in English only. Respond with ONLY a valid JSON object and nothing else - no explanation, no markdown code fences, no extra text.
     All numeric values (percentages, dollar amounts) must be plain numbers without % or $ symbols, and must not be wrapped in quotes.
     Format as JSON with these keys:
@@ -834,7 +836,7 @@ def generate_career_comparison(paths, education_costs, timeframes):
     - industry_trends (dict with each career path name as a key, mapping to an object with keys: growth_rate (number), market_demand (string), future_outlook (string))
     - risk_factors (dict with each career path name as a key, mapping to a list of short risk description strings)
     """
-    
+
     def build_fallback():
         """Simple safe fallback so the page always renders even if the model output is unusable"""
         years = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
@@ -851,47 +853,47 @@ def generate_career_comparison(paths, education_costs, timeframes):
             path: ["Market conditions may vary", "Individual results depend on effort and circumstances"]
             for path in paths
         }
-       return {
+        return {
             "salary_projections": salary_projections,
             "roi_analysis": roi_analysis,
             "industry_trends": industry_trends,
             "risk_factors": risk_factors,
             "is_estimated": True
         }
-    
+
     max_attempts = 3
     last_error = None
-    
+
     for attempt in range(1, max_attempts + 1):
         try:
             response = ollama.chat(
                 model="deepseek-r1:1.5b",
                 messages=[{"role": "user", "content": prompt}],
-                format="json"  # Ask Ollama to constrain output to valid JSON syntax
+                format="json"
             )
-            
+
             raw_output = clean_llm_output(response['message']['content'])
             raw_output = re.sub(r"^```json\s*|\s*```$", "", raw_output.strip(), flags=re.MULTILINE)
+
             # Repair common small-model JSON mistakes
-            raw_output = re.sub(r'(?<=\d),(?=\d)', '', raw_output)          # remove commas inside numbers like 80,000
-            raw_output = re.sub(r'\$', '', raw_output)                      # remove $ signs
-            raw_output = re.sub(r'\b(\d+)\s*[kK]\b', lambda m: str(int(m.group(1)) * 1000), raw_output)  # 95k -> 95000
-            
+            raw_output = re.sub(r'(?<=\d),(?=\d)', '', raw_output)
+            raw_output = re.sub(r'\$', '', raw_output)
+            raw_output = re.sub(r'\b(\d+)\s*[kK]\b', lambda m: str(int(m.group(1)) * 1000), raw_output)
+
             parsed = json.loads(raw_output)
             logger.info(f"Career comparison JSON parsed successfully on attempt {attempt}")
             return normalize_comparison_data(parsed, paths)
-            
+
         except json.JSONDecodeError as e:
             last_error = e
             logger.error(f"Attempt {attempt}/{max_attempts} - Failed to parse comparison JSON: {e}. Raw output: {raw_output[:500] if 'raw_output' in dir() else 'N/A'}")
         except Exception as e:
             last_error = e
             logger.error(f"Attempt {attempt}/{max_attempts} - Error calling Ollama: {e}")
-    
-    # All attempts failed - use safe fallback instead of crashing the page
+
     logger.error(f"All {max_attempts} attempts failed for career comparison. Last error: {last_error}. Using fallback data.")
     return build_fallback()
-
+        
 # Routes
 @app.route("/dashboard")
 def dashboard():
